@@ -1,0 +1,82 @@
+
+/*
+This is tested on Arduino DUE on Serial0
+On other HW Serial ports IT DOES NOT WORK PROPERLY! 
+The 818 module take erratic frequencies!
+Tried even HW pullups for the serial Rx/Tx
+The Dorji is not responding with " +DMOCONNECT: x<CR><LF>  " as it is in the original documentation.
+*/
+
+#define PTT     10  // PTT pin. This is active low.
+#define PD      11  // Power Down pin. This need to start low, then be set high before programming.
+
+// set parameters for DRA818V
+int bw = 1;                                        // bandwith in KHz ( 0= 12.5KHz or 1= 25KHz )
+float ftx = 145.5000;                    // tx frequency in MHz (134.0000 - 174.0000)
+float frx = 145.5000;                    // rx frequency in MHz (134.0000 - 174.0000)
+String tx_ctcss = "0000";               // ctcss frequency ( 0000 - 0038 ); 0000 = "no CTCSS" 
+String rx_ctcss = "0000";               // ctcss frequency ( 0000 - 0038 ); 0000 = "no CTCSS" 
+int squ = 0;                                       // squelch level  ( 0 - 8 ); 0 = "open" 
+
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  
+  
+  pinMode(PTT, OUTPUT);
+  pinMode(PD, OUTPUT);
+      digitalWrite(PD, LOW);   //  Go SLEEP
+      delay(250);
+      digitalWrite(PD, HIGH);  // Get out from Sleep
+   setRfDorji();
+}
+
+
+void loop(){
+    // Key the PTT on and off repeatedly.
+    digitalWrite(PTT, LOW); // PTT is Active low, so this turns the PTT on.
+    delay(3000);
+    digitalWrite(PTT, HIGH); // PTT off.
+    delay(3000); 
+}
+
+void testDorji(){
+  Serial.println("AT+DMOCONNECT");
+}
+
+void setRfDorji()
+{                            // Before we write we play a little with Sleep/NoSleep
+                             // Fuck You Dorji, I am awake at 3:30 in the morning for this shitty procedure.
+      digitalWrite(PD, LOW);   //  Go SLEEP
+      delay(250);
+      digitalWrite(PD, HIGH);  // Get out from Sleep
+      delay(500);
+      digitalWrite(PTT, HIGH);     // We make sure is not in TX state
+
+      //Serial.println(F("AT+DMOSETGROUP=1,145.2500,145.2500,0000,0,0000"));   // Set BW 25kHz, Tx and Rx, No CTCSS
+	                     //The above line can be used by commenting the following lines
+   
+  Serial.print("AT+DMOSETGROUP=");         // begin message
+  Serial.print(bw,1);
+  Serial.print(",");
+  Serial.print(ftx,4);
+  Serial.print(",");
+  Serial.print(frx,4);
+  Serial.print(",");
+  Serial.print(tx_ctcss);
+  Serial.print(",");
+  Serial.print(squ);
+  Serial.print(",");
+  Serial.print(rx_ctcss);
+  Serial.println();
+                  //   KEEP BELOW THIS!!!
+
+      delay(150);
+      digitalWrite(PD, LOW);                // Sleep
+      delay(500);
+      digitalWrite(PD, HIGH);           // WakeUp. Some sort of reset!
+      delay(150);
+
+
+}
